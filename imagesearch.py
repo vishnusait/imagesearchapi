@@ -3,22 +3,28 @@
 # USAGE
 # python imagesearch.py --q cats --o cats
 
+# import the necessary packages
 import requests
 import random
 import argparse
 import cv2
 import os
 
+# constructing argument parser
 ap = argparse.ArgumentParser()
 ap.add_argument("-q", "--query", required=True,
 	help="search query to search API for")
 ap.add_argument("-o", "--output", required=True,
 	help="path to output directory of images")
 args = vars(ap.parse_args())
+
+#initializing the total number of images downloaded so far
 total = 0
+output = args["output"]
+# doing the search
 search = requests.get("https://api.qwant.com/api/search/images",
     params={
-        'count': 50,
+        'count': 5,
         'q': args["query"],
         't': 'images',
         'safesearch': 0,
@@ -30,15 +36,18 @@ search = requests.get("https://api.qwant.com/api/search/images",
     }
 )
 search.raise_for_status()
+
+# grabbing the search results in the urls
 response = search.json().get('data').get('result').get('items')
 urls = [search.get('media') for search in response]
-#results = search["result"]
-print(urls)
+
+# getting the images from the urls using "get"
 for v in urls:
     print("[INFO] fetching")
     r = requests.get(v, timeout=30)
-    ext = ".jpg"
-    p = os.path.sep.join([args["output"], "{}{}".format(str(total).zfill(8), ext)])
+    #giving the extension
+    ext = v[v.rfind("."):]
+    p = os.path.sep.join([output, "{}{}".format(str(total).zfill(8), ext)])
     # write the image to disk
     f = open(p, "wb")
     f.write(r.content)
@@ -49,4 +58,4 @@ for v in urls:
         os.remove(p)
         continue
     total += 1
-print("[DONE] your images are ready in {}".format([args["output"]))
+print("[DONE] your images are ready in dir \"{}\"".format(output))
